@@ -28,10 +28,18 @@
   </style>
 </head>
 <body>
-  <swipe>
+  <swipe :auto="2000">
     <swipe-item class="page1">饿了么</swipe-item>
     <swipe-item class="page2">美团</swipe-item>
     <swipe-item class="page3">百度</swipe-item>
+  </swipe>
+
+  <br>
+
+  <swipe :speed="900" :auto="0" :show-indicators="true" :no-drag="true">
+    <swipe-item v-for="data in datas" style="color: #dedede;">
+      {{data.name}}
+    </swipe-item>
   </swipe>
 
   <br>
@@ -40,10 +48,8 @@
     <swipe-item class="page1">SINGLE PAGE</swipe-item>
   </swipe>
 
-  <br>
-
-  <swipe :speed="900" :auto="0" :show-indicators="false" :no-drag="true">
-    <swipe-item class="page1">SINGLE PAGE</swipe-item>
+  <swipe :speed="900" :auto="0" :show-indicators="false" :no-drag-when-single="false">
+    <swipe-item class="page2">SINGLE PAGE</swipe-item>
   </swipe>
 
   <script src="../node_modules/vue/dist/vue.js"></script>

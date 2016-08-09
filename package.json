@@ -4,7 +4,7 @@
   "description": "A touch slider for vue.js.",
   "main": "lib/vue-swipe.js",
   "scripts": {
-    "dev": "webpack-dev-server --config ./webpack.example.config.js --inline --hot",
+    "dev": "webpack-dev-server --config ./webpack.example.config.js --inline --hot --port",
     "remote-dev": "npm run dev --host",
     "build": "webpack -p",
     "prepublish": "npm run build"

@@ -47,7 +47,7 @@
 
 <template>
   <div class="swipe">
-    <div class="swipe-items-wrap" v-el:wrap>
+    <div class="swipe-items-wrap">
       <slot></slot>
     </div>
     <div class="swipe-indicators" v-show="showIndicators">
@@ -62,13 +62,14 @@
   var animating = false;
 
   var translate = function(element, offset, speed, callback) {
+
     element.style.webkitTransform = `translate3d(${offset}px, 0, 0)`;
 
     if (speed) {
-      animating = true;
+      animating = true; // 判断是否处于transform动画中。。
       element.style.webkitTransition = '-webkit-transform ' + speed + 'ms ease-in-out';
 
-      var called = false;
+      var called = false;  // 如果执行了 once 那么就不会执行 setTimeout
 
       var transitionEndCallback = function() {
         if (called) return;
@@ -178,7 +179,7 @@
         this.pages = pages;
       },
 
-      doAnimate(towards, options) {
+      doAnimate(tow ards, options) {
         if (this.$children.length === 0) return;
         if (!options && this.$children.length < 2) return;
 
@@ -193,17 +194,23 @@
           currentPage = pages[index];
           prevPage = pages[index - 1];
           nextPage = pages[index + 1];
+          // 实现最后一张到一张 || 第一张到最后一张的转化
           if (this.continuous && pages.length > 1) {
-            if (!prevPage) {
-              prevPage = pages[pages.length - 1];
+            if (!prevPage) { // 如果前一张图不存在
+              prevPage = pages[pages.length - 1]; // 前一张图 = 最后一张图
             }
-            if (!nextPage) {
+            if (!nextPage) { // 如果后一张图不存在 // 后一张图 = 第一张图
               nextPage = pages[0];
             }
           }
+          /***
+            * 初始状态: div transform(-100%) [ 均处于可是界面左侧 ], active: transform: none[处于页面中];
+            * doAnimate初始状态: prevPage transform(-pageWidth)[ 处于可是界面左侧 ],
+                                nextPage transform(-pageWidth) [处于可是界面右侧]
+          ***/
           if (prevPage) {
             prevPage.style.display = 'block';
-            translate(nextPage, -pageWidth);
+            translate(prevPage, -pageWidth);
           }
           if (nextPage) {
             nextPage.style.display = 'block';
@@ -221,6 +228,7 @@
 
         var oldPage = this.$children[index].$el;
 
+        // 处理边缘情况
         if (towards === 'prev') {
           if (index > 0) {
             newIndex = index - 1;
@@ -254,7 +262,11 @@
             nextPage.style.display = '';
           }
         };
-
+        /***
+          * 经历了 doAnimate 初始化状态后
+            如果 towards === 'next', currentPage transform(-pageWidth)[ 处于可是界面左侧 ],历时 speed
+          * 最后 nextPage transform( 0 )[ 处于可是界面中间 ]
+        ***/
         setTimeout(() => {
           if (towards === 'next') {
             translate(currentPage, -pageWidth, speed, callback);
@@ -295,24 +307,28 @@
         this.doAnimate('prev');
       },
 
+      // 鼠标按住，不滑动图片的情况下，左右看图片
       doOnTouchStart: function(event) {
         if (this.noDrag) return;
 
         var element = this.$el;
         var dragState = this.dragState;
+
         var touch = event.touches[0];
 
         dragState.startTime = new Date();
         dragState.startLeft = touch.pageX;
         dragState.startTop = touch.pageY;
 
-        dragState.pageWidth = element.offsetWidth;
-        dragState.pageHeight = element.offsetHeight;
+        dragState.pageWidth = element.offsetWidth;  //均为 图片 的的宽度
+
+        dragState.pageHeight = element.offsetHeight; //均为 图片 的的高度
 
         var prevPage = this.$children[this.index - 1];
         var dragPage = this.$children[this.index];
         var nextPage = this.$children[this.index + 1];
 
+        // 如果是第一个或最后一个的情况
         if (this.continuous && this.pages.length > 1) {
           if (!prevPage) {
             prevPage = this.$children[this.$children.length - 1];
@@ -345,6 +361,7 @@
         dragState.currentTop = touch.pageY;
 
         var offsetLeft = dragState.currentLeft - dragState.startLeft;
+
         offsetLeft = Math.min(Math.max(-dragState.pageWidth + 1, offsetLeft), dragState.pageWidth - 1);
 
         var towards = offsetLeft < 0 ? 'next' : 'prev';
@@ -367,23 +384,13 @@
         var towards = null;
 
         var offsetLeft = dragState.currentLeft - dragState.startLeft;
-        var offsetTop = dragState.currentTop - dragState.startTop;
         var pageWidth = dragState.pageWidth;
         var index = this.index;
         var pageCount = this.pages.length;
 
-        if (dragDuration < 300) {
-          let fireTap = Math.abs(offsetLeft) < 5 && Math.abs(offsetTop) < 5;
-          if (isNaN(offsetLeft) || isNaN(offsetTop)) {
-            fireTap = true;
-          }
-          if (fireTap) {
-            this.$children[this.index].$emit('tap');
-          }
-        }
+        if (dragDuration < 300 && dragState.currentLeft === undefined) return; // 仅触碰了一下
 
-        if (dragDuration < 300 && dragState.currentLeft === undefined) return;
-
+        // 如何滑动的幅度大于图片的 50% 则左（右）滑动一张图片， 否则 towards = null
         if (dragDuration < 300 || Math.abs(offsetLeft) > pageWidth / 2) {
           towards = offsetLeft < 0 ? 'next' : 'prev';
         }
